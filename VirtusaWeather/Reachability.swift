@@ -1,15 +1,16 @@
 //
 //  Reachability.swift
-//  RandstadWeather
+//  VirtusaWeather
 //
-//  Created by Kiranpal Reddy Gurijala on 5/9/16.
-//  Copyright © 2016 Randstad. All rights reserved.
+//  Created by Kiranpal Reddy Gurijala on 2/20/17.
+//  Copyright © 2017 AryaVahni. All rights reserved.
 //
 
 import UIKit
 import Foundation
 import SystemConfiguration
 
+// Reachability to check the network reachability
 open class Reachability: NSObject {
     class func isConnectedToNetwork() -> Bool {
         

@@ -1,9 +1,9 @@
 //
 //  OpenWeatherServiceProtocol.swift
-//  RandstadWeather
+//  VirtusaWeather
 //
-//  Created by Kiranpal Reddy Gurijala on 5/7/16.
-//  Copyright © 2016 Randstad. All rights reserved.
+//  Created by Kiranpal Reddy Gurijala on 2/20/17.
+//  Copyright © 2017 AryaVahni. All rights reserved.
 //
 
 import Foundation

@@ -1,9 +1,9 @@
 //
-//  OpenWeatherServiceProtocol.swift
-//  RandstadWeather
+//  OpenWeatherService.swift
+//  VirtusaWeather
 //
-//  Created by Kiranpal Reddy Gurijala on 5/7/16.
-//  Copyright © 2016 Randstad. All rights reserved.
+//  Created by Kiranpal Reddy Gurijala on 2/20/17.
+//  Copyright © 2017 AryaVahni. All rights reserved.
 //
 
 import Foundation
@@ -11,12 +11,12 @@ import CoreLocation
 
 struct OpenWeatherService: OpenWeatherServiceProtocol {
   fileprivate let urlPath = "http://api.openweathermap.org/data/2.5/forecast/"
-  //city?id=524901&APPID={APIKEY}
     
     func retrieveWeatherInfo(_ location: NSArray, type:String, completionHandler: @escaping WeatherCompletionHandler) {
     let sessionConfig = URLSessionConfiguration.default
     let session = URLSession(configuration: sessionConfig)
     
+    // Generating the request URL
     guard let url = generateRequestURL(location, type: type) else {
       let error = Error(errorCode: .urlError)
       completionHandler(nil, error)
@@ -42,32 +42,55 @@ struct OpenWeatherService: OpenWeatherServiceProtocol {
       
       let json = JSON(data: unwrappedData)
       
-        if(type=="current"){
+      if(type == "search"){
             print("Result is", json)
-      // Get temperature, location, description and icon and check parsing error
-        var weatherbuilderArray:[WeatherBuilder]=[]
-        for index in 0..<json["list"].count{
-            guard let tempDegrees = json["list"][index]["main"]["temp"].double,
-                let country = json["list"][index]["sys"]["country"].string,
-                let city = json["list"][index]["name"].string,
-                let weatherCondition = json["list"][index]["weather"][0]["id"].int,
-                let weatherDescription = json["list"][index]["weather"][0]["description"].string,
-                let iconString = json["list"][index]["weather"][0]["icon"].string else {
+            guard let tempDegrees = json["main"]["temp"].double,
+                let country = json["sys"]["country"].string,
+                let city = json["name"].string,
+                let weatherCondition = json["weather"][0]["id"].int,
+                let weatherDescription = json["weather"][0]["description"].string,
+                let iconString = json["weather"][0]["icon"].string else {
                     let error = Error(errorCode: .jsonParsingFailed)
                     completionHandler(nil, error)
                     return
             }
+            
             var weatherBuilder = WeatherBuilder()
-            let temperature = Temperature(country: "CA", openWeatherMapDegrees:tempDegrees)
+            let temperature = Temperature(country: "US", openWeatherMapDegrees:tempDegrees)
             weatherBuilder.temperature = temperature.degrees
-            weatherBuilder.location = city
+            weatherBuilder.location = city+", "+country
             weatherBuilder.description = weatherDescription
             let weatherIcon = WeatherIcon(condition: weatherCondition, iconString: iconString)
-            weatherBuilder.iconText = weatherIcon.iconText
-            weatherBuilder.forecasts=[]
+            weatherBuilder.iconText = iconString
+            print(iconString)
+            var forecasts: [Forecast] = []
+            // Get the first four forecasts
+            for index in 0...4 {
+                guard let forecastTempDegrees = json["list"][index]["temp"]["day"].double,
+                    let rawDateTime = json["list"][index]["dt"].double,
+                    let forecastCondition = json["list"][index]["weather"][0]["id"].int,
+                    let weatherDescription = json["list"][index]["weather"][0]["description"].string,
+                    let forecastIcon = json["list"][index]["weather"][0]["icon"].string else {
+                        break
+                }
+                
+                let forecastTemperature = Temperature(country: country, openWeatherMapDegrees: forecastTempDegrees)
+                let forecastTimeString = ForecastDateTime(rawDateTime).shortTime
+                
+                let weatherIcon = WeatherIcon(condition: forecastCondition, iconString: forecastIcon)
+                let forcastIconText = weatherIcon.iconText
+                let forecastDescription = weatherDescription
+                let forecast = Forecast(time: forecastTimeString,
+                                        iconText: forcastIconText,
+                                        temperature: forecastTemperature.degrees, description:forecastDescription)
+                
+                forecasts.append(forecast)
+            }
+            
+            weatherBuilder.forecasts = forecasts
+            
             completionHandler(weatherBuilder.build(), nil)
-            //weatherbuilderArray.append(weatherBuilder)
-        }
+            print("Complete")
         }
         else{
            print("Result is", json)
@@ -118,7 +141,6 @@ struct OpenWeatherService: OpenWeatherServiceProtocol {
             
             completionHandler(weatherBuilder.build(), nil)
         }
-        //print(weatherbuilderArray)
     })
     
     task.resume()
@@ -135,6 +157,10 @@ struct OpenWeatherService: OpenWeatherServiceProtocol {
     var openURL:String=""
     if(type=="current"){
         openURL="http://api.openweathermap.org/data/2.5/group?id="+group+"&units=metric&appid=e450f19dcd0309b83b5ee086aea18d07"
+    }
+    else if(type=="search"){
+        openURL="http://api.openweathermap.org/data/2.5/weather?q="+(location[0] as! String)+"&appid=e450f19dcd0309b83b5ee086aea18d07"
+        print(openURL)
     }
     else{
        openURL="http://api.openweathermap.org/data/2.5/forecast/daily?id="+(location[0] as! String)+"&appid=e450f19dcd0309b83b5ee086aea18d07&cnt=5"
